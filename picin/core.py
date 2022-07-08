@@ -1,3 +1,4 @@
+from functools import cached_property, cache
 from imageio.v3 import imread
 import numpy as np
 import cv2
@@ -13,22 +14,23 @@ class Image:
         show()
         return self
 
-    def crop_to_square(self):
+    @cached_property
+    def square(self) -> np.ndarray:
         h, w = self.buffer.shape[:2]
         if h > w:
             y = (h - w) // 2
-            self.buffer = self.buffer[y:y + w]
+            return self.buffer[y:y + w]
         elif w > h:
             x = (w - h) // 2
-            self.buffer = self.buffer[:, x:x + h]
-        return self
+            return self.buffer[:, x:x + h]
 
-    def fit(self, length):
-        self.buffer = cv2.resize(self.buffer, (length, length), interpolation=cv2.INTER_AREA)
-        return self
+    @cache
+    def resized(self, length):
+        return cv2.resize(self.square, (length, length), interpolation=cv2.INTER_AREA)
 
+    @cached_property
     def average(self) -> np.ndarray:
-        return self.crop_to_square().buffer.mean(0).mean(0)
+        return self.square.mean((0, 1))
 
-    def distance(self, color: np.ndarray):
-        return sum((self.average() - color) ** 2)
+    def distance(self, color):
+        return sum((self.average - color) ** 2) ** 0.5
