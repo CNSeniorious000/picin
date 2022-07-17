@@ -77,26 +77,3 @@ class Image:
         from blosc2 import decompress
         with open(path, "rb") as f:
             cls.averages.update(loads(decompress(f.read())))
-
-
-if __name__ == '__main__':
-    from pillow_heif import register_heif_opener
-
-    register_heif_opener()
-    for i in range(10):
-        _ = Image("../input/IMG_20220625_194125.HEIC").average
-    print(Image.__new__.cache_info())
-
-    print(Image.averages)
-    Image.save_cache()
-    Image.load_cache()
-    print(Image.averages)
-
-    """
-    buffer是一个property保证了图片的懒加载
-    __new__的缓存保证了相同图片不会重复加载, 也不会重新计算均值
-    
-    实测大大加快了尤其是HEIF文件的加载速度
-    
-    但问题是pkl文件太大了, 现在50张图片能有500MB
-    """
