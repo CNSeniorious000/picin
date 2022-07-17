@@ -62,21 +62,21 @@ class Image:
         return f"<Image from {self.path!r}>"
 
     @classmethod
-    def save_cache(cls, path="averages.yaml"):
-        from yaml import dump
-        with open(path, "w") as f:
-            f.write(dump(cls.averages))
+    def save_cache(cls, path="averages.pkl"):
+        from pickle import dumps
+        from blosc2 import compress
+        with open(path, "wb") as f:
+            f.write(compress(dumps(cls.averages, 5)))
 
     @classmethod
-    def load_cache(cls, path="averages.yaml"):
-        from yaml import load, CLoader
-        with open(path) as f:
-            averages = load(f.read(), CLoader)
-
-        for key, val in averages.items():
-            averages[key] = np.array(val)
-
-        cls.averages.update(averages)
+    def load_cache(cls, path="averages.pkl"):
+        from os.path import isfile
+        if not isfile(path):
+            return
+        from pickle import loads
+        from blosc2 import decompress
+        with open(path, "rb") as f:
+            cls.averages.update(loads(decompress(f.read())))
 
 
 if __name__ == '__main__':
