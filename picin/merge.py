@@ -1,15 +1,16 @@
 from picin.core import *
 import numpy as np
+from os import walk
 from pillow_heif import register_heif_opener
 
 
 class BigImage:
     register_heif_opener()
 
-    def __init__(self, path, block_size, assets):
-        self.buffer: np.ndarray = imread(path)
+    def __init__(self, filename, block_size, directory):
+        self.buffer: np.ndarray = imread(filename)
         self.block_size = block_size
-        self.assets = assets
+        self.assets = [Image(path) for path in image_paths(directory)]
 
         w, h = self.buffer.shape[:2]  # cropping
 
@@ -32,3 +33,7 @@ class BigImage:
         y = i * bs
         x = j * bs
         average = np.mean(self.buffer[y:y + bs, x:x + bs])
+        scores = {image.distance(average): image for image in self.assets}
+        minimum = min(scores)
+        choice = scores[minimum]
+        return choice

@@ -77,3 +77,9 @@ class Image:
         from blosc2 import decompress
         with open(path, "rb") as f:
             cls.averages.update(loads(decompress(f.read())))
+
+
+def image_paths(asset_dir):
+    from itertools import chain
+    from glob import iglob
+    return chain(iglob(f"{asset_dir}/*.jpg"), iglob(f"{asset_dir}/*.HEIC"))
