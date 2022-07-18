@@ -14,18 +14,17 @@ class BigImage:
         self.square_size = ss
         self.assets = [Image(path) for path in image_paths(directory)]
 
-        # print(len([image.average for image in alive_it(self.assets)]))
-        for image in alive_it(self.assets):
+        for path in alive_it(image_paths(directory)):
+            image = Image(path)
             try:
+                # noinspection PyStatementEffect
                 image.average
+                image.resized(ss)
+                image.delete_buffer()
             except OSError as err:
-                # OSError: image file is truncated
                 print(err)
                 print(image)
                 print(image.path)
-                from rich import inspect
-                inspect(image)
-                exit()
 
         h, w = self.image.shape[:2]  # cropping
 

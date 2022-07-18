@@ -36,12 +36,13 @@ class Image:
         else:
             return self.buffer
 
-    # noinspection PyPropertyAccess
     @cache
     def resized(self, length):
-        result = cv2.resize(self.square, (length, length), interpolation=cv2.INTER_AREA)
+        return cv2.resize(self.square, (length, length), interpolation=cv2.INTER_AREA)
+
+    # noinspection PyPropertyAccess
+    def delete_buffer(self):
         del self.square, self.buffer  # optimize memory of no use
-        return result
 
     @cached_property
     def average(self) -> np.ndarray:
@@ -49,7 +50,7 @@ class Image:
             return self.averages[self.path]
         except KeyError:
             result: np.ndarray = self.square.mean((0, 1))
-            self.averages[self.path] = result.tolist()
+            self.averages[self.path] = result
             return result
 
     def distance(self, color):
@@ -84,4 +85,8 @@ class Image:
 
 def image_paths(asset_dir):
     from glob import glob
-    return glob(f"{asset_dir}/*.jpg") + glob(f"{asset_dir}/*.HEIC")
+    return sum([
+        glob(f"{asset_dir}/*.HEIC"),
+        glob(f"{asset_dir}/*.png"),
+        glob(f"{asset_dir}/*.jpg")
+    ], start=[])
