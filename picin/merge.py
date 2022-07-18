@@ -50,15 +50,15 @@ class BigImage:
         y = i * bs
         x = j * bs
         average = self.image[y:y + bs, x:x + bs].mean((0, 1))
-        scores = {image.distance(average): image for image in self.assets}
+        distances = {image.distance(average): image for image in self.assets}
 
         if self.strategy == "nearest":
-            minimum = min(scores)
-            return scores[minimum]
+            minimum = min(distances)
+            return distances[minimum]
         elif self.strategy.startswith("random"):
             from random import choice
             n = int(self.strategy.removeprefix("random-"))
-            return scores[choice(sorted(scores)[:n])]
+            return distances[choice(sorted(distances)[:n])]
 
     def process(self):
         bs = self.block_size

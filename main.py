@@ -3,7 +3,7 @@ from imageio.v3 import imwrite
 
 Image.load_cache()
 
-img = BigImage("100.png", 30, 100, "input", "random-5")
+img = BigImage("in.jpg", 18, 36, "input", "random-3")
 
 Image.save_cache()
 

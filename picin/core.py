@@ -53,7 +53,7 @@ class Image:
             return self.averages[self.path]
         except KeyError:
             result: np.ndarray = self.square.mean((0, 1))
-            print(f"calculating average of {self}")
+            # print(f"calculating average of {self}")
             self.averages[self.path] = result
             return result
 
