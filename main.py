@@ -1,12 +1,9 @@
-from glob import glob
-from picin import Image
-from pillow_heif import register_heif_opener
-
-register_heif_opener()
+from picin import Image, BigImage
 
 Image.load_cache()  # failed. cache miss.
 
-for file in glob("input/*.HEIC")[:50]:
-    print(Image(file).average)
+img = BigImage("100.png", 20, "input")
 
-Image.save_cache()
+# Image.save_cache()
+
+img.process()

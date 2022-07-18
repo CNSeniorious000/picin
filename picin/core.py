@@ -36,9 +36,12 @@ class Image:
         else:
             return self.buffer
 
+    # noinspection PyPropertyAccess
     @cache
     def resized(self, length):
-        return cv2.resize(self.square, (length, length), interpolation=cv2.INTER_AREA)
+        result = cv2.resize(self.square, (length, length), interpolation=cv2.INTER_AREA)
+        del self.square, self.buffer  # optimize memory of no use
+        return result
 
     @cached_property
     def average(self) -> np.ndarray:
@@ -80,6 +83,5 @@ class Image:
 
 
 def image_paths(asset_dir):
-    from itertools import chain
-    from glob import iglob
-    return chain(iglob(f"{asset_dir}/*.jpg"), iglob(f"{asset_dir}/*.HEIC"))
+    from glob import glob
+    return glob(f"{asset_dir}/*.jpg") + glob(f"{asset_dir}/*.HEIC")
