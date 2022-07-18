@@ -3,10 +3,13 @@ from imageio.v3 import imwrite
 
 Image.load_cache()
 
-img = BigImage("in.jpg", 18, 36, "input", "random-3")
 
-# Image.save_cache()
+def main():
+    img = BigImage("1.png", 20, 20, "input", 13, 4, 2)
+    # Image.save_cache()
+    img.process()
+    imwrite("output.png", img.buffer)
 
-img.process()
 
-imwrite("output.png", img.buffer)
+if __name__ == '__main__':
+    main()

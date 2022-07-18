@@ -1,18 +1,22 @@
-from picin.core import *
-import numpy as np
 from pillow_heif import register_heif_opener
 from alive_progress import alive_it
+from random import shuffle, choices
 from itertools import product
+from picin.core import *
+from math import dist
+import numpy as np
 
 
 class BigImage:
     register_heif_opener()
 
-    def __init__(self, filename, bs, ss, directory, strategy):
+    def __init__(self, filename, bs, ss, directory, random_num, r, r_min):
         self.image: np.ndarray = imread(filename)
         self.block_size = bs
         self.square_size = ss
-        self.strategy: str = strategy
+        self.random_num: str = random_num
+        self.r: int = r
+        self.r_min: int = r_min
         self.assets = [Image(path) for path in image_paths(directory)]
 
         for path in alive_it(image_paths(directory)):
@@ -43,12 +47,28 @@ class BigImage:
         else:
             self.w = w
 
-        ny = self.h // bs
-        nx = self.w // bs
-
+        self.ny = ny = self.h // bs
+        self.nx = nx = self.w // bs
         self.buffer = np.empty((ss * ny, ss * nx, 3), np.uint8)
 
-        self.log = [[None] * (nx + 2) for _ in range(ny + 2)]
+        ny += r + r
+        nx += r + r
+        self.log: list[list[Image | None]] = [[None] * nx for _ in range(ny)]
+
+    def weight(self, i, j, image: Image):
+        log, r, r_min = self.log, self.r, self.r_min
+        i, j = i + r, j + r
+
+        tmp = 0
+        for ii in range(i - r, i + r):
+            for jj in range(j - r, j + r):
+                if log[ii][jj] == image:
+                    d = dist((ii, jj), (i, j))
+                    if d <= r_min:
+                        return 0
+                    else:
+                        tmp += 1 / d
+        return 1 / tmp if tmp else r * 1.45
 
     def choose(self, i, j) -> Image:
         bs = self.block_size
@@ -56,37 +76,22 @@ class BigImage:
         x = j * bs
         average = self.image[y:y + bs, x:x + bs].mean((0, 1))
 
-        log = self.log
+        distances = {image.distance(average): image for image in self.assets}  # 方差
+        choose_from = sorted(distances)[:self.random_num]
+        weight_map = [self.weight(i, j, distances[key]) for key in choose_from]
+        result = distances[choices(choose_from, weight_map)[0]]
 
-        i += 1
-        j += 1
-        neighbors = {log[i - 1][j], log[i + 1][j], log[i][j - 1], log[i][j + 1]}
-
-        distances = {image.distance(average): image
-                     for image in self.assets if image not in neighbors}
-
-        if self.strategy == "nearest":
-            minimum = min(distances)
-            result = distances[minimum]
-        elif self.strategy.startswith("random"):
-            from random import choice
-            n = int(self.strategy.removeprefix("random-"))
-            result = distances[choice(sorted(distances)[:n])]
-        else:
-            raise NotImplementedError
-
-        log[i][j] = result
+        self.log[i + self.r][j + self.r] = result
 
         return result
 
     def process(self):
-        bs = self.block_size
-        ss = self.square_size
+        bs, ss, ny, nx = self.block_size, self.square_size, self.ny, self.nx
 
-        ny = self.h // bs
-        nx = self.w // bs
+        locations = list(product(range(ny), range(nx)))
+        shuffle(locations)
 
-        for i, j in alive_it(product(range(ny), range(nx)), ny * nx):
+        for i, j in alive_it(locations):
             y = i * ss
             x = j * ss
             chosen = self.choose(i, j).resized(ss)
