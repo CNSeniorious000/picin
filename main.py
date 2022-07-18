@@ -5,7 +5,7 @@ Image.load_cache()
 
 img = BigImage("in.jpg", 18, 36, "input", "random-3")
 
-Image.save_cache()
+# Image.save_cache()
 
 img.process()
 

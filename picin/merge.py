@@ -43,22 +43,41 @@ class BigImage:
         else:
             self.w = w
 
-        self.buffer = np.empty((ss * self.h // bs, ss * self.w // bs, 3), np.uint8)
+        ny = self.h // bs
+        nx = self.w // bs
+
+        self.buffer = np.empty((ss * ny, ss * nx, 3), np.uint8)
+
+        self.log = [[None] * (nx + 2) for _ in range(ny + 2)]
 
     def choose(self, i, j) -> Image:
         bs = self.block_size
         y = i * bs
         x = j * bs
         average = self.image[y:y + bs, x:x + bs].mean((0, 1))
-        distances = {image.distance(average): image for image in self.assets}
+
+        log = self.log
+
+        i += 1
+        j += 1
+        neighbors = {log[i - 1][j], log[i + 1][j], log[i][j - 1], log[i][j + 1]}
+
+        distances = {image.distance(average): image
+                     for image in self.assets if image not in neighbors}
 
         if self.strategy == "nearest":
             minimum = min(distances)
-            return distances[minimum]
+            result = distances[minimum]
         elif self.strategy.startswith("random"):
             from random import choice
             n = int(self.strategy.removeprefix("random-"))
-            return distances[choice(sorted(distances)[:n])]
+            result = distances[choice(sorted(distances)[:n])]
+        else:
+            raise NotImplementedError
+
+        log[i][j] = result
+
+        return result
 
     def process(self):
         bs = self.block_size
