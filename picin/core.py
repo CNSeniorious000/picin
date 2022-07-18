@@ -1,5 +1,6 @@
 from functools import cached_property, cache
 from imageio.v3 import imread
+# from rich import print
 import numpy as np
 import cv2
 
@@ -38,7 +39,9 @@ class Image:
 
     @cache
     def resized(self, length):
-        return cv2.resize(self.square, (length, length), interpolation=cv2.INTER_AREA)
+        result = cv2.resize(self.square, (length, length), interpolation=cv2.INTER_AREA)
+        self.delete_buffer()
+        return result
 
     # noinspection PyPropertyAccess
     def delete_buffer(self):
@@ -50,6 +53,7 @@ class Image:
             return self.averages[self.path]
         except KeyError:
             result: np.ndarray = self.square.mean((0, 1))
+            print(f"calculating average of {self}")
             self.averages[self.path] = result
             return result
 

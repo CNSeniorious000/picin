@@ -8,10 +8,11 @@ from itertools import product
 class BigImage:
     register_heif_opener()
 
-    def __init__(self, filename, bs, ss, directory):
+    def __init__(self, filename, bs, ss, directory, strategy):
         self.image: np.ndarray = imread(filename)
         self.block_size = bs
         self.square_size = ss
+        self.strategy: str = strategy
         self.assets = [Image(path) for path in image_paths(directory)]
 
         for path in alive_it(image_paths(directory)):
@@ -19,8 +20,8 @@ class BigImage:
             try:
                 # noinspection PyStatementEffect
                 image.average
-                image.resized(ss)
-                image.delete_buffer()
+                # image.resized(ss)
+                # image.delete_buffer()
             except OSError as err:
                 print(err)
                 print(image)
@@ -48,11 +49,16 @@ class BigImage:
         bs = self.block_size
         y = i * bs
         x = j * bs
-        average = np.mean(self.image[y:y + bs, x:x + bs])
+        average = self.image[y:y + bs, x:x + bs].mean((0, 1))
         scores = {image.distance(average): image for image in self.assets}
-        minimum = min(scores)
-        choice = scores[minimum]
-        return choice
+
+        if self.strategy == "nearest":
+            minimum = min(scores)
+            return scores[minimum]
+        elif self.strategy.startswith("random"):
+            from random import choice
+            n = int(self.strategy.removeprefix("random-"))
+            return scores[choice(sorted(scores)[:n])]
 
     def process(self):
         bs = self.block_size
@@ -64,7 +70,14 @@ class BigImage:
         for i, j in alive_it(product(range(ny), range(nx)), ny * nx):
             y = i * ss
             x = j * ss
-            self.buffer[y:y + ss, x:x + ss] = self.choose(i, j).resized(ss)
+            chosen = self.choose(i, j).resized(ss)
+            try:
+                self.buffer[y:y + ss, x:x + ss] = chosen
+            except ValueError as err:
+                assert "could not broadcast input array" in err.args[0]
+                self.buffer[y:y + ss, x:x + ss, 0] = chosen
+                self.buffer[y:y + ss, x:x + ss, 1] = chosen
+                self.buffer[y:y + ss, x:x + ss, 2] = chosen
 
         # noinspection PyTypeChecker
         Image.show(self)
