@@ -8,9 +8,10 @@ from itertools import product
 class BigImage:
     register_heif_opener()
 
-    def __init__(self, filename, block_size, directory):
-        self.buffer: np.ndarray = imread(filename)
-        self.block_size = block_size
+    def __init__(self, filename, bs, ss, directory):
+        self.image: np.ndarray = imread(filename)
+        self.block_size = bs
+        self.square_size = ss
         self.assets = [Image(path) for path in image_paths(directory)]
 
         # print(len([image.average for image in alive_it(self.assets)]))
@@ -26,25 +27,29 @@ class BigImage:
                 inspect(image)
                 exit()
 
-        h, w = self.buffer.shape[:2]  # cropping
+        h, w = self.image.shape[:2]  # cropping
 
-        if y := h % block_size:
+        if y := h % bs:
             self.h = h - y
             y //= 2
-            self.buffer = self.buffer[y: y + self.h]
+            self.image = self.image[y: y + self.h]
         else:
             self.h = h
 
-        if x := w % block_size:
+        if x := w % bs:
             self.w = w - x
             x //= 2
-            self.buffer = self.buffer[:, x: x + self.w]
+            self.image = self.image[:, x: x + self.w]
         else:
             self.w = w
 
-    def best(self, y, x) -> Image:
+        self.buffer = np.empty((ss * self.h // bs, ss * self.w // bs, 3), np.uint8)
+
+    def choose(self, i, j) -> Image:
         bs = self.block_size
-        average = np.mean(self.buffer[y:y + bs, x:x + bs])
+        y = i * bs
+        x = j * bs
+        average = np.mean(self.image[y:y + bs, x:x + bs])
         scores = {image.distance(average): image for image in self.assets}
         minimum = min(scores)
         choice = scores[minimum]
@@ -52,14 +57,15 @@ class BigImage:
 
     def process(self):
         bs = self.block_size
+        ss = self.square_size
 
         ny = self.h // bs
         nx = self.w // bs
 
         for i, j in alive_it(product(range(ny), range(nx)), ny * nx):
-            y = i * bs
-            x = j * bs
-            self.buffer[y:y + bs, x:x + bs] = self.best(y, x).resized(bs)
+            y = i * ss
+            x = j * ss
+            self.buffer[y:y + ss, x:x + ss] = self.choose(i, j).resized(ss)
 
         # noinspection PyTypeChecker
         Image.show(self)
