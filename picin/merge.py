@@ -104,4 +104,4 @@ class BigImage:
                 self.buffer[y:y + ss, x:x + ss, 2] = chosen
 
         # noinspection PyTypeChecker
-        Image.show(self)
+        # Image.show(self)
